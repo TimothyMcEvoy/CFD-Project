@@ -632,7 +632,7 @@ module subroutines
   use set_precision, only : Prec
   use set_constants, only : one, two, four, half, fourth
   use set_inputs, only : vel2ref, rmu, rho, dx, dy, cfl, rkappa, imax, jmax
-  use variables, only : u, dt, dtmin
+  use variables, only : u, dt, dtmin 
 
   implicit none
   
@@ -646,12 +646,42 @@ module subroutines
   Real(kind=Prec) ::      lambda_y = -99.9_Prec    ! Max absolute value eigenvalue in (y,t)
   Real(kind=Prec) ::      lambda_max = -99.9_Prec  ! Max absolute value eigenvalue (used in convective time step computation)
   Real(kind=Prec) ::      dtconv = -99.9_Prec      ! Local convective time step restriction
+  Real(kind=Prec) ::      nu = -99.9_Prec          ! Kinematic Viscocity 
 
 
 !**************************************************************
 !************ADD CODING HERE FOR INTRO CFD STUDENTS************
 !**************************************************************
+! 
+  
+  !Initialize global max delta_t to a very large value
+  dtmin = 1.0e99_Prec
+  nu = rmu / rho  !Dont know if rmu = mu
+   
+  do j = two, jmax - one
+    do i = two, imax - one
 
+      
+
+      uvel2 = u(i, j)**two !Calculate velocity squared term
+
+      beta2 = max(uvel2, rkappa* vel2ref) !From Lecture set 6
+
+      lambda_x = (half)*(abs(u(i, j))+SQRT(uvel2 + four * beta2))
+      lambda_y = lambda_x !I do not see v in the code
+  
+      lambda_max = max(lambda_x, lambda_y)
+
+      dtconv= min(dx, dy) / lambda_max  !Convective Stability Limit
+      dtvisc = dx * dy/(four * nu)      !Viscous Stability Limit
+
+      dt(i, j) = cfl* min(dtconv, dtvisc)
+      dtmin = min(dt(i, j), dtmin)
+
+
+    end do
+  
+  end do
 
   end subroutine compute_time_step
 
