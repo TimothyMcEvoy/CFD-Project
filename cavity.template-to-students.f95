@@ -538,6 +538,24 @@ module subroutines
 !************ADD CODING HERE FOR INTRO CFD STUDENTS************
 !**************************************************************
 
+! Bottom Wall = 0(u = v = 0)
+  do i = 1, imax      
+    u(i, 1) = zero       !Fortran starts at 1 like MATLAB
+  end do
+
+
+! Side Walls (u = v = 0)
+
+  do j = 1, jmax
+    u(1, j) = zero      !Left Wall Boundary Condition
+    u(imax, j) = zero   !Right Wall Boundary Condition
+  end do
+
+! Top Wall(u = Ulid, v = 0)
+  do i = 1, imax      
+    u(i, jmax) = uinf   
+  end do
+
 
   return
 
