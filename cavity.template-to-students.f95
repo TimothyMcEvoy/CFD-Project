@@ -538,22 +538,29 @@ module subroutines
 !************ADD CODING HERE FOR INTRO CFD STUDENTS************
 !**************************************************************
 
-! Bottom Wall = 0(u = v = 0)
+  ! Bottom Wall (u = v = 0)
   do i = 1, imax      
-    u(i, 1) = zero       !Fortran starts at 1 like MATLAB
+    u(i, 1, 2) = zero  ! u = 0 (horizontal velocity)
+    u(i, 1, 3) = zero  ! v = 0 (vertical velocity)
+    u(i, 1, 1) = two * u(i, 2, 1) - u(i, 3, 1) !Linear extrapolation for pressure
   end do
 
-
-! Side Walls (u = v = 0)
-
+  ! Side Walls (u = v = 0)
   do j = 1, jmax
-    u(1, j) = zero      !Left Wall Boundary Condition
-    u(imax, j) = zero   !Right Wall Boundary Condition
+    u(1, j, 2) = zero      ! Left Wall: u = 0 (horizontal velocity)
+    u(1, j, 3) = zero      ! Left Wall: v = 0 (vertical velocity)
+    u(1, j , 1) = two * u(2, j, 1) - u(3, j, 1) !Linear extrapolation for pressure
+
+    u(imax, j, 2) = zero   ! Right Wall: u = 0 (horizontal velocity)
+    u(imax, j, 3) = zero   ! Right Wall: v = 0 (vertical velocity)
+    u(imax, j, 1) = two * u(imax-1, j, 1) - u(imax - 2, j, 1) !Linear extrapolation for pressure
   end do
 
-! Top Wall(u = Ulid, v = 0)
+  ! Top Wall (u = Ulid, v = 0)
   do i = 1, imax      
-    u(i, jmax) = uinf   
+    u(i, jmax, 2) = uinf  ! u = Ulid (lid velocity)
+    u(i, jmax, 3) = zero  ! v = 0 (vertical velocity)
+    u(i, jmax, 1) = two * u(i, jmax - 1, 1) - u(i, jmax - 2, 1)!Linear extrapolation for pressure
   end do
 
 
@@ -656,19 +663,19 @@ module subroutines
   
   !Initialize global max delta_t to a very large value
   dtmin = 1.0e99_Prec
-  nu = rmu / rho  !Dont know if rmu = mu
+  nu = rmu / rho 
    
   do j = two, jmax - one
     do i = two, imax - one
 
-      
-
-      uvel2 = u(i, j)**two !Calculate velocity squared term
-
+      uvel2 = u(i, j, 2)**two   !Calculate velocity squared term for u
       beta2 = max(uvel2, rkappa* vel2ref) !From Lecture set 6
+      lambda_x = (half)*(abs(u(i, j, 2))+SQRT(uvel2 + four * beta2))
 
-      lambda_x = (half)*(abs(u(i, j))+SQRT(uvel2 + four * beta2))
-      lambda_y = lambda_x !I do not see v in the code
+
+      uvel2 = u(i, j, 3)**two !Calculate velocity squared term for v
+      beta2 = max(uvel2, rkappa* vel2ref) !From Lecture set 6
+      lambda_y = (half)*(abs(u(i, j, 3))+SQRT(uvel2 + four * beta2))
   
       lambda_max = max(lambda_x, lambda_y)
 
@@ -743,6 +750,26 @@ module subroutines
 !************ADD CODING HERE FOR INTRO CFD STUDENTS************
 !**************************************************************
 
+
+   
+  do j = two, jmax - one
+    do i = two, imax - one
+
+      uvel2 = u(i, j, 2)**two   !Calculate velocity squared term for u
+      beta2 = max(uvel2, rkappa* vel2ref) !From Lecture set 6
+      lambda_x = (half)*(abs(u(i, j, 2))+SQRT(uvel2 + four * beta2))
+
+
+      uvel2 = u(i, j, 3)**two !Calculate velocity squared term for v
+      beta2 = max(uvel2, rkappa* vel2ref) !From Lecture set 6
+      lambda_y = (half)*(abs(u(i, j, 3))+SQRT(uvel2 + four * beta2))
+  
+    enddo
+  enddo
+
+  d4pdx4=u(i, j, 1)
+
+    
 
 
   end subroutine Compute_Artificial_Viscosity
