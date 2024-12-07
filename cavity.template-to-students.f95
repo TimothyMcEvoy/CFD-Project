@@ -840,6 +840,46 @@ module subroutines
 !************ADD CODING HERE FOR INTRO CFD STUDENTS************
 !**************************************************************
 
+! Initialize uold to hold current solution
+  uold = u
+
+  ! Loop over grid points to perform Jacobi iteration
+  do j = 2, jmax - 1
+    do i = 2, imax - 1
+
+      ! Compute beta^2 (time preconditioning term)
+      uvel2 = u(i, j, 2)**2 + u(i, j, 3)**two  ! u^2 + v^2
+      beta2 = max(uvel2, rkappa * vel2ref)
+
+      ! Compute first derivatives using central difference scheme
+      dpdx = (u(i+1, j, 1) - u(i-1, j, 1)) / (two * dx)
+      dpdy = (u(i, j+1, 1) - u(i, j-1, 1)) / (two * dy)
+
+      dudx = (u(i+1, j, 2) - u(i-1, j, 2)) / (two * dx)
+      dvdx = (u(i+1, j, 3) - u(i-1, j, 3)) / (two * dx)
+
+      dudy = (u(i, j+1, 2) - u(i, j-1, 2)) / (two * dy)
+      dvdy = (u(i, j+1, 3) - u(i, j-1, 3)) / (two * dy)
+
+      ! Compute second derivatives using central difference scheme
+      d2udx2 = (u(i-1, j, 2) - two * u(i, j, 2) + u(i+1, j, 2)) / (dx**2)
+      d2vdx2 = (u(i-1, j, 3) - two * u(i, j, 3) + u(i+1, j, 3)) / (dx**2)
+
+      d2udy2 = (u(i, j-1, 2) - two * u(i, j, 2) + u(i, j+1, 2)) / (dy**2)
+      d2vdy2 = (u(i, j-1, 3) - two * u(i, j, 3) + u(i, j+1, 3)) / (dy**2)
+
+      ! Update x-momentum (u-component)
+      
+      u(i, j, 2) = u(i, j, 2) + dt(i,j) * (-dpdx + artviscx(i, j) * (d2udx2 + d2udy2))
+
+      ! Update y-momentum (v-component)
+      u(i, j, 3) = u(i, j, 3) + dt(i,j) * (-dpdy + artviscy(i, j) * (d2vdx2 + d2vdy2))
+
+      
+
+    end do
+  end do
+
 
 
   end subroutine point_Jacobi
