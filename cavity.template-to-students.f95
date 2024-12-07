@@ -665,16 +665,15 @@ module subroutines
   dtmin = 1.0e99_Prec
   nu = rmu / rho 
    
-  do j = two, jmax - one
-    do i = two, imax - one
+  do j = 2, jmax - 1
+    do i = 2, imax - 1
 
-      uvel2 = u(i, j, 2)**two   !Calculate velocity squared term for u
-      beta2 = max(uvel2, rkappa* vel2ref) !From Lecture set 6
+      beta2 = max(u(i, j, 2)**2 +u(i, j, 3)**2 , rkappa* vel2ref)!From Lecture set 6
+      uvel2 = u(i, j, 2)**two   !Calculate velocity squared term for u 
       lambda_x = (half)*(abs(u(i, j, 2))+SQRT(uvel2 + four * beta2))
 
 
-      uvel2 = u(i, j, 3)**two !Calculate velocity squared term for v
-      beta2 = max(uvel2, rkappa* vel2ref) !From Lecture set 6
+      uvel2 = u(i, j, 3)** two !Calculate velocity squared term for v
       lambda_y = (half)*(abs(u(i, j, 3))+SQRT(uvel2 + four * beta2))
   
       lambda_max = max(lambda_x, lambda_y)
@@ -752,22 +751,53 @@ module subroutines
 
 
    
-  do j = two, jmax - one
-    do i = two, imax - one
+  do j = 1, jmax - 1
+    do i = 2, imax - 1
 
-      uvel2 = u(i, j, 2)**two   !Calculate velocity squared term for u
-      beta2 = max(uvel2, rkappa* vel2ref) !From Lecture set 6
+      beta2 = max(u(i, j, 2) ** two +u(i, j, 3) ** two , rkappa* vel2ref)!From Lecture set 6
+      uvel2 = u(i, j, 2)** two   !Calculate velocity squared term for u 
       lambda_x = (half)*(abs(u(i, j, 2))+SQRT(uvel2 + four * beta2))
 
 
-      uvel2 = u(i, j, 3)**two !Calculate velocity squared term for v
-      beta2 = max(uvel2, rkappa* vel2ref) !From Lecture set 6
+      uvel2 = u(i, j, 3)** two !Calculate velocity squared term for v
       lambda_y = (half)*(abs(u(i, j, 3))+SQRT(uvel2 + four * beta2))
   
+      if (i >= 3 .and. i <= imax - 2) then
+        d4pdx4 = (u(i+2, j, 1) - four * u(i+1, j, 1) + six * u(i, j, 1) - &
+                 four * u(i-1, j, 1) + u(i-2, j, 1))/(dx ** 4)
+      else if (i == 2) then
+        d4pdx4 = (u(i+2, j, 1) - four * u(i+1, j, 1) + six * u(i, j, 1) - &
+                 four * u(i-1, j, 1) + (two * u(i-1, j, 1)-  u(i, j, 1))) / (dx ** 4)
+      else
+        d4pdx4 = ((two * u(imax, j, 1) - u(imax-1, j, 1)) - four * u(i+1, j, 1) + &
+                 six * u(i, j, 1) - four * u(i-1, j, 1) + u(i-2, j, 1)) / (dx ** 4)
+      end if
+
+
+      if (j >= 3 .and. j <= jmax - 2) then
+        d4pdy4 = (u(i, j + 2, 1) - four * u(i, j + 1, 1) + six * u(i, j, 1) - &
+                 four * u(i, j - 1, 1) + u(i, j - 2, 1))/(dy ** 4)
+      else if (i == 2) then
+        d4pdy4 = (u(i, j+2, 1) - four * u(i, j+1, 1) + six * u(i, j, 1) - &
+                 four * u(i, j-1, 1) + (two * u(i, j-1, 1)-  u(i, j, 1))) / (dy ** 4)
+      else
+
+        d4pdy4 = ((two * u(i,jmax,1) - u(i, jmax - 1, 1)) - four * u(i, j+1, 1) + six * u(i, j, 1) - &
+                 four * u(i, j-1, 1) + u(i, j - 2, 1))/(dy ** 4)
+        
+        
+        
+      end if
+
+      artviscx(i,j) = (-abs(lambda_x) * Cx * dx ** 3)/beta2 * d4pdx4
+      artviscy(i,j) = (-abs(lambda_y) * Cy * dx ** 3)/beta2 * d4pdx4
+
+
+
     enddo
   enddo
 
-  d4pdx4=u(i, j, 1)
+ 
 
     
 
