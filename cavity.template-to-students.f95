@@ -832,6 +832,7 @@ module subroutines
   Real(kind=Prec) ::      d2vdy2 = -99.9_Prec      ! Second derivative of y velocity w.r.t. y
   Real(kind=Prec) ::      beta2 = -99.9_Prec       ! Beta squared parameter for time derivative preconditioning
   Real(kind=Prec) ::      uvel2 = -99.9_Prec       ! Velocity squared 
+  Real(kind=Prec) ::      residual = 1    ! Residual
 
 
   ! Point Jacobi method
@@ -840,44 +841,56 @@ module subroutines
 !************ADD CODING HERE FOR INTRO CFD STUDENTS************
 !**************************************************************
 
-! Initialize uold to hold current solution
-  uold = u
 
-  ! Loop over grid points to perform Jacobi iteration
-  do j = 2, jmax - 1
-    do i = 2, imax - 1
 
-      ! Compute beta^2 (time preconditioning term)
-      uvel2 = u(i, j, 2)**2 + u(i, j, 3)**two  ! u^2 + v^2
-      beta2 = max(uvel2, rkappa * vel2ref)
+  do while (1==1)
 
-      ! Compute first derivatives using central difference scheme
-      dpdx = (u(i+1, j, 1) - u(i-1, j, 1)) / (two * dx)
-      dpdy = (u(i, j+1, 1) - u(i, j-1, 1)) / (two * dy)
+    ! Loop over grid points
+    do j = 2, jmax - 1
+      do i = 2, imax - 1
 
-      dudx = (u(i+1, j, 2) - u(i-1, j, 2)) / (two * dx)
-      dvdx = (u(i+1, j, 3) - u(i-1, j, 3)) / (two * dx)
+        ! Compute time preconditioning term
+        uvel2 = uold(i, j, 2)**2 + uold(i, j, 3)**two  ! u^2 + v^2
+        beta2 = max(uvel2, rkappa * vel2ref)
 
-      dudy = (u(i, j+1, 2) - u(i, j-1, 2)) / (two * dy)
-      dvdy = (u(i, j+1, 3) - u(i, j-1, 3)) / (two * dy)
+        ! Compute first derivatives using central difference scheme
+        dpdx = (uold(i+1, j, 1) - uold(i-1, j, 1)) / (two * dx)
+        dpdy = (uold(i, j+1, 1) - uold(i, j-1, 1)) / (two * dy)
 
-      ! Compute second derivatives using central difference scheme
-      d2udx2 = (u(i-1, j, 2) - two * u(i, j, 2) + u(i+1, j, 2)) / (dx**2)
-      d2vdx2 = (u(i-1, j, 3) - two * u(i, j, 3) + u(i+1, j, 3)) / (dx**2)
+        dudx = (uold(i+1, j, 2) - uold(i-1, j, 2)) / (two * dx)
+        dvdx = (uold(i+1, j, 3) - uold(i-1, j, 3)) / (two * dx)
 
-      d2udy2 = (u(i, j-1, 2) - two * u(i, j, 2) + u(i, j+1, 2)) / (dy**2)
-      d2vdy2 = (u(i, j-1, 3) - two * u(i, j, 3) + u(i, j+1, 3)) / (dy**2)
+        dudy = (uold(i, j+1, 2) - uold(i, j-1, 2)) / (two * dy)
+        dvdy = (uold(i, j+1, 3) - uold(i, j-1, 3)) / (two * dy)
 
-      ! Update x-momentum (u-component)
-      
-      u(i, j, 2) = u(i, j, 2) + dt(i,j) * (-dpdx + artviscx(i, j) * (d2udx2 + d2udy2))
+        ! Compute second derivatives using central difference scheme
+        d2udx2 = (uold(i-1, j, 2) - two * uold(i, j, 2) + uold(i+1, j, 2)) / (dx**2)
+        d2vdx2 = (uold(i-1, j, 3) - two * uold(i, j, 3) + uold(i+1, j, 3)) / (dx**2)
 
-      ! Update y-momentum (v-component)
-      u(i, j, 3) = u(i, j, 3) + dt(i,j) * (-dpdy + artviscy(i, j) * (d2vdx2 + d2vdy2))
+        d2udy2 = (uold(i, j-1, 2) - two * uold(i, j, 2) + uold(i, j+1, 2)) / (dy**2)
+        d2vdy2 = (uold(i, j-1, 3) - two * uold(i, j, 3) + uold(i, j+1, 3)) / (dy**2)
 
-      
+        
+        if (((rho * dudx + rho * dvdy) - (artviscx(i,j) + artviscy(i,j)) - 0) < 0.001) then
+          exit
+        else 
+          
+          ! Update x-momentum (u-component)
+          u(i, j, 1) = uold(i, j, 1) - beta2 * dt * (rho * dudx + rho * dvdy - (artviscx(i,j) + artviscy(i,j)) - s)
+         
+          ! Update x-momentum (u-component)
+          u(i, j, 2) = uold(i, j, 2) - dt * rhoinv * (rho * u(i,j,2) * dudx + rho * u(i,j,3) * dudy + dpdx & 
+                                                      - artviscx(i,j) * d2udx2 - artviscx(i,j) * d2udy2 - s)
+         
+          ! Update y-momentum (v-component)
+          u(i, j, 3) = uold(i, j, 3) - dt * rhoinv * (rho * u(i,j,3) * dvdx + rho * u(i,j,3) * dvdy + dpdx & 
+                                                      - artviscy(i,j) * d2vdx2 - artviscy(i,j) * d2vdy2 - s)
+       end if
+        
 
+      end do
     end do
+
   end do
 
 
