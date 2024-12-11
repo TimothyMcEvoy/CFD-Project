@@ -1,3 +1,5 @@
+clear
+clc
 % plot.m
 % Script to plot x and y against p, u, and v from cavity.dat
 
@@ -70,12 +72,40 @@ if isempty(dataArray{1})
     error('Data could not be loaded. Check the file format and delimiters.');
 end
 
-% Extract variables
+% Extract variables from dataArray
+J = 129;
 x = dataArray{1};
 y = dataArray{2};
 p = dataArray{3};
 u = dataArray{4};
 v = dataArray{5};
+
+% Get the length of each array
+x_len = length(x);
+y_len = length(y);
+p_len = length(p);
+u_len = length(u);
+v_len = length(v);
+
+% Ensure J^2 doesn't exceed the array length and calculate the trim index
+trim_index_x = max(x_len - J^2 + 1, 1);
+trim_index_y = max(y_len - J^2 + 1, 1);
+trim_index_p = max(p_len - J^2 + 1, 1);
+trim_index_u = max(u_len - J^2 + 1, 1);
+trim_index_v = max(v_len - J^2 + 1, 1);
+
+% Trim each array from the calculated index to the end and save to the same variables
+x = x(trim_index_x:end);
+y = y(trim_index_y:end);
+p = p(trim_index_p:end);
+u = u(trim_index_u:end);
+v = v(trim_index_v:end);
+
+
+
+
+
+
 
 % Display a few values to verify data loading
 disp('First few values of x:'); disp(x(1:min(5,end)));
@@ -91,7 +121,7 @@ disp('First few values of p:'); disp(p(1:min(5,end)));
 % v = v(sortIdx);
 
 % Determine I and J
-J = 129;
+
 totalElements = length(x);
 I = totalElements / J;
 if mod(totalElements, J) ~= 0
@@ -111,40 +141,34 @@ disp(['P size: ', num2str(size(P))]);
 disp(['U size: ', num2str(size(U))]);
 disp(['V size: ', num2str(size(V))]);
 
-% Optional: Plot a simple scatter to verify data
-figure;
-scatter(x, y, 10, p, 'filled');
-title('Pressure Scatter Plot');
-xlabel('x (m)');
-ylabel('y (m)');
-colorbar;
+% % Optional: Plot a simple scatter to verify data
+% figure;
+% scatter(x, y, 10, p, 'filled');
+% title('Pressure Scatter Plot');
+% xlabel('x (m)');
+% ylabel('y (m)');
+% colorbar;
 
 % Plot Pressure
 figure;
-surf(X, Y, P);
-title('Pressure Field');
+contourf(X, Y, P);
+title('Pressure');
 xlabel('x (m)');
 ylabel('y (m)');
-zlabel('p (N/m^2)');
-shading interp;
 colorbar;
 
 % Plot Velocity u
 figure;
-surf(X, Y, U);
+contourf(X, Y, U);
 title('Velocity u');
 xlabel('x (m)');
 ylabel('y (m)');
-zlabel('u (m/s)');
-shading interp;
 colorbar;
 
 % Plot Velocity v
 figure;
-surf(X, Y, V);
+contourf(X, Y, V);
 title('Velocity v');
 xlabel('x (m)');
 ylabel('y (m)');
-zlabel('v (m/s)');
-shading interp;
 colorbar;
