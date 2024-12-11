@@ -48,10 +48,10 @@ module set_inputs ! Sets the input variables for the code
   implicit none
   
   ! Set input values
-  Integer, Parameter ::   imax = 63             ! Number of points in the x-direction (use odd numbers only)
-  Integer, Parameter ::   jmax = 63             ! Number of points in the y-direction (use odd numbers only)
+  Integer, Parameter ::   imax = 129             ! Number of points in the x-direction (use odd numbers only)
+  Integer, Parameter ::   jmax = 129            ! Number of points in the y-direction (use odd numbers only)
   Integer, Parameter ::   neq = 3               ! Number of equation to be solved ( = 3: mass, x-mtm, y-mtm)
-  Integer ::              nmax = 500000         ! Maximum number of iterations
+  Integer ::              nmax = 2000000         ! Maximum number of iterations
   Integer ::              iterout = 5000        ! Number of time steps between solution output
   Integer ::              imms = 0              ! Manufactured solution flag: = 1 for manuf. sol., = 0 otherwise
   Integer ::              isgs = 0              ! Symmetric Gauss-Seidel  flag: = 1 for SGS, = 0 for point Jacobi
@@ -62,7 +62,7 @@ module set_inputs ! Sets the input variables for the code
   Real(kind=Prec) ::      cfl  = 0.9_Prec       ! CFL number used to determine time step
   Real(kind=Prec) ::      Cx = 0.01_Prec        ! Parameter for 4th order artificial viscosity in x
   Real(kind=Prec) ::      Cy = 0.01_Prec        ! Parameter for 4th order artificial viscosity in y
-  Real(kind=Prec) ::      toler = 1.e-10_Prec   ! Tolerance for iterative residual convergence
+  Real(kind=Prec) ::      toler = 1.e-8_Prec   ! Tolerance for iterative residual convergence
   Real(kind=Prec) ::      rkappa = 0.1_Prec     ! Time derivative preconditioning constant
   Real(kind=Prec) ::      Re = 100.0_Prec       ! Reynolds number = rho*Uinf*L/rmu
   Real(kind=Prec) ::      pinf = 0.801333844662_Prec ! Initial pressure (N/m^2) -> from MMS value at cavity center
@@ -530,6 +530,7 @@ module subroutines
 
   Integer ::              i                    ! i index (x direction)
   Integer ::              j                    ! j index (y direction)
+  Integer ::              k                    ! j index (y direction)
 
 ! This applies the cavity boundary conditions
  
@@ -563,9 +564,18 @@ module subroutines
     u(i, jmax, 1) = two * u(i, jmax - 1, 1) - u(i, jmax - 2, 1)!Linear extrapolation for pressure
    
   end do
+  
+  
+    !do j = 1, jmax
+      !do i = 1, imax
+        !print*,"u:",u(i,j,1),"i:",i,"j:",j
 
+      !end do
+    !end do 
+      
 
-  return
+  
+  
 
   end subroutine bndry
 
@@ -670,6 +680,7 @@ module subroutines
     do i = 2, imax - 1
 
       beta2 = max(u(i, j, 2)**2 +u(i, j, 3)**2 , rkappa* vel2ref)!From Lecture set 6
+      
       uvel2 = u(i, j, 2)**two   !Calculate velocity squared term for u 
       lambda_x = (half)*(abs(u(i, j, 2))+SQRT(uvel2 + four * beta2))
 
@@ -689,7 +700,12 @@ module subroutines
     end do
   
   end do
+  !do j = 2, jmax-1
+      !do i = 2, imax -1
+        !print*,"dt:",dt(i,j)
 
+      !end do
+    !end do
   end subroutine compute_time_step
 
   !#######
@@ -750,21 +766,21 @@ module subroutines
 !************ADD CODING HERE FOR INTRO CFD STUDENTS************
 !**************************************************************
 
-
    
   do j = 2, jmax - 1
     do i = 2, imax - 1
 
-      !print*,"p:",u(i,j,2),"i: ",i,"j: ",j
+      
 
 
       beta2 = max(u(i, j, 2) ** two +u(i, j, 3) ** two , rkappa* vel2ref)!From Lecture set 6
-      uvel2 = u(i, j, 2)**two   !Calculate velocity squared term for u 
+      
+      uvel2 = u(i, j, 2)**two+u(i, j, 3)**two   !Calculate velocity squared term for u 
       lambda_x = (half)*(abs(u(i, j, 2))+SQRT(uvel2 + four * beta2))
-
+      
 
       uvel2 = u(i, j, 3)**two !Calculate velocity squared term for v
-      print*,"Uvel2:",uvel2
+      !print*,"Uvel2:",uvel2
       lambda_y = (half)*(abs(u(i, j, 3))+SQRT(uvel2 + four * beta2))
   
       if (i >= 3 .and. i <= imax - 2) then
@@ -777,7 +793,7 @@ module subroutines
         d4pdx4 = ((two * u(imax, j, 1) - u(imax-1, j, 1)) - four * u(i+1, j, 1) + &
                  six * u(i, j, 1) - four * u(i-1, j, 1) + u(i-2, j, 1)) / (dx ** 4)
       end if
-
+      !print*,"dp4dx4:",d4pdx4,"i: ",i,"j: ",j
 
       if (j >= 3 .and. j <= jmax - 2) then
         d4pdy4 = (u(i, j + 2, 1) - four * u(i, j + 1, 1) + six * u(i, j, 1) - &
@@ -843,6 +859,7 @@ module subroutines
   Real(kind=Prec) ::      d2vdy2 = -99.9_Prec      ! Second derivative of y velocity w.r.t. y
   Real(kind=Prec) ::      beta2 = -99.9_Prec       ! Beta squared parameter for time derivative preconditioning
   Real(kind=Prec) ::      uvel2 = -99.9_Prec       ! Velocity squared 
+  
 
   ! Point Jacobi method
 
@@ -852,11 +869,15 @@ module subroutines
   
 
     ! Loop over grid points
+  
+    
     do j = 2, jmax - 1
       do i = 2, imax - 1
+        
+        
 
         ! Compute time preconditioning term
-        uvel2 = uold(i, j, 2)**2 + uold(i, j, 3)**two  ! u^2 + v^2
+        uvel2 = uold(i, j, 2)**two + uold(i, j, 3)**two  ! u^2 + v^2
         beta2 = max(uvel2, rkappa * vel2ref)
 
         ! Compute first derivatives using central difference scheme
@@ -868,6 +889,7 @@ module subroutines
 
         dudy = (uold(i, j+1, 2) - uold(i, j-1, 2)) / (two * dy)
         dvdy = (uold(i, j+1, 3) - uold(i, j-1, 3)) / (two * dy)
+        !print*,"dudy",dudy
 
         ! Compute second derivatives using central difference scheme
         d2udx2 = (uold(i-1, j, 2) - two * uold(i, j, 2) + uold(i+1, j, 2)) / (dx**2)
@@ -881,17 +903,19 @@ module subroutines
          
 
           ! Update x-momentum (u-component)
+          !print*," term",rho * uold(i,j,2) * dudx
           u(i, j, 2) = uold(i, j, 2) - dt(i,j) * rhoinv * (rho * uold(i,j,2) * dudx + rho * uold(i,j,3) * dudy + dpdx & 
-                                                      - artviscx(i,j) * d2udx2 - artviscx(i,j) * d2udy2 - s(i,j,2))
+                                                      - rmu * d2udx2 - rmu * d2udy2 - s(i,j,2))
          
+           
           ! Update y-momentum (v-component)
           u(i, j, 3) = uold(i, j, 3) - dt(i,j) * rhoinv * (rho * uold(i,j,2) * dvdx + rho * uold(i,j,3) * dvdy + dpdy & 
-                                                      - artviscy(i,j) * d2vdx2 - artviscy(i,j) * d2vdy2 - s(i,j,3))
-          
-        
+                                                      - rmu * d2vdx2 - rmu * d2vdy2 - s(i,j,3))
+    
 
       end do
     end do
+    
     
   end subroutine point_Jacobi
 
@@ -1045,14 +1069,16 @@ module subroutines
     end do
     norm_u2=(sum_u2/real(imax*jmax))**(1.0/2.0)
     norm_uold2=(sum_uold2/real(imax*jmax))**(1.0/2.0)
-    res(k) = norm_u2/norm_uold2
-    !print*,"normu2:",norm_u2,"normuold2:",norm_uold2 !used for debugging
+    res(k) = abs(resinit(k) - norm_u2/norm_uold2)
+    !print*,"norm_u:",norm_u2
     sum_u2 = zero
     sum_uold2 = zero
+    
   end do
 
 
   conv = amax1(res(1),res(2),res(3)) ! Place current maximum scaled iterative residual into variable 'conv'
+  !print*,"conv:",conv
   
   ! Write iterative residuals every 10 iterations
   if( (mod(n,10).eq.0).or.n.eq.ninit ) then
