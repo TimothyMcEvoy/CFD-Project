@@ -54,7 +54,7 @@ module set_inputs ! Sets the input variables for the code
   Integer ::              nmax = 500000         ! Maximum number of iterations
   Integer ::              iterout = 5000        ! Number of time steps between solution output
   Integer ::              imms = 0              ! Manufactured solution flag: = 1 for manuf. sol., = 0 otherwise
-  Integer ::              isgs = 1              ! Symmetric Gauss-Seidel  flag: = 1 for SGS, = 0 for point Jacobi
+  Integer ::              isgs = 0              ! Symmetric Gauss-Seidel  flag: = 1 for SGS, = 0 for point Jacobi
   Integer ::              irstr = 0             ! Restart flag: = 1 for restart (file 'restart.in', = 0 for initial run
   Integer ::              ipgorder = 0          ! Order of pressure gradient: 0 = 2nd, 1 = 3rd (not needed)
   Integer ::              lim = 1               ! variable to be used as the limiter sensor (= 1 for pressure)
@@ -832,7 +832,7 @@ module subroutines
   Real(kind=Prec) ::      d2vdy2 = -99.9_Prec      ! Second derivative of y velocity w.r.t. y
   Real(kind=Prec) ::      beta2 = -99.9_Prec       ! Beta squared parameter for time derivative preconditioning
   Real(kind=Prec) ::      uvel2 = -99.9_Prec       ! Velocity squared 
-  Real(kind=Prec) ::      residual = 1    ! Residual
+
 
 
   ! Point Jacobi method
@@ -840,9 +840,6 @@ module subroutines
 !**************************************************************
 !************ADD CODING HERE FOR INTRO CFD STUDENTS************
 !**************************************************************
-
-
-
   do while (1==1)
 
     ! Loop over grid points
@@ -870,30 +867,28 @@ module subroutines
         d2udy2 = (uold(i, j-1, 2) - two * uold(i, j, 2) + uold(i, j+1, 2)) / (dy**2)
         d2vdy2 = (uold(i, j-1, 3) - two * uold(i, j, 3) + uold(i, j+1, 3)) / (dy**2)
 
-        
-        if (((rho * dudx + rho * dvdy) - (artviscx(i,j) + artviscy(i,j)) - 0) < 0.001) then
+        if (((rho * dudx + rho * dvdy) - (artviscx(i,j) + artviscy(i,j)) - s(i,j,1)) < 0.001) then
           exit
         else 
           
-          ! Update x-momentum (u-component)
-          u(i, j, 1) = uold(i, j, 1) - beta2 * dt * (rho * dudx + rho * dvdy - (artviscx(i,j) + artviscy(i,j)) - s)
+          ! Update pressure (u-component)
+          u(i, j, 1) = uold(i, j, 1) - beta2 * dt * (rho * dudx + rho * dvdy - (artviscx(i,j) + artviscy(i,j)) - s(i,j,1))
          
           ! Update x-momentum (u-component)
           u(i, j, 2) = uold(i, j, 2) - dt * rhoinv * (rho * u(i,j,2) * dudx + rho * u(i,j,3) * dudy + dpdx & 
-                                                      - artviscx(i,j) * d2udx2 - artviscx(i,j) * d2udy2 - s)
+                                                      - artviscx(i,j) * d2udx2 - artviscx(i,j) * d2udy2 - s(i,j,2))
          
           ! Update y-momentum (v-component)
           u(i, j, 3) = uold(i, j, 3) - dt * rhoinv * (rho * u(i,j,3) * dvdx + rho * u(i,j,3) * dvdy + dpdx & 
-                                                      - artviscy(i,j) * d2vdx2 - artviscy(i,j) * d2vdy2 - s)
+                                                      - artviscy(i,j) * d2vdx2 - artviscy(i,j) * d2vdy2 - s(i,j,3))
        end if
         
 
       end do
     end do
+    uold = u
 
   end do
-
-
 
   end subroutine point_Jacobi
 
