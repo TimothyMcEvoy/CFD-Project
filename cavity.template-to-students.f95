@@ -48,8 +48,8 @@ module set_inputs ! Sets the input variables for the code
   implicit none
   
   ! Set input values
-  Integer, Parameter ::   imax = 65             ! Number of points in the x-direction (use odd numbers only)
-  Integer, Parameter ::   jmax = 65             ! Number of points in the y-direction (use odd numbers only)
+  Integer, Parameter ::   imax = 63             ! Number of points in the x-direction (use odd numbers only)
+  Integer, Parameter ::   jmax = 63             ! Number of points in the y-direction (use odd numbers only)
   Integer, Parameter ::   neq = 3               ! Number of equation to be solved ( = 3: mass, x-mtm, y-mtm)
   Integer ::              nmax = 500000         ! Maximum number of iterations
   Integer ::              iterout = 5000        ! Number of time steps between solution output
@@ -561,6 +561,7 @@ module subroutines
     u(i, jmax, 2) = uinf  ! u = Ulid (lid velocity)
     u(i, jmax, 3) = zero  ! v = 0 (vertical velocity)
     u(i, jmax, 1) = two * u(i, jmax - 1, 1) - u(i, jmax - 2, 1)!Linear extrapolation for pressure
+   
   end do
 
 
@@ -751,15 +752,19 @@ module subroutines
 
 
    
-  do j = 1, jmax - 1
+  do j = 2, jmax - 1
     do i = 2, imax - 1
 
+      !print*,"p:",u(i,j,2),"i: ",i,"j: ",j
+
+
       beta2 = max(u(i, j, 2) ** two +u(i, j, 3) ** two , rkappa* vel2ref)!From Lecture set 6
-      uvel2 = u(i, j, 2)** two   !Calculate velocity squared term for u 
+      uvel2 = u(i, j, 2)**two   !Calculate velocity squared term for u 
       lambda_x = (half)*(abs(u(i, j, 2))+SQRT(uvel2 + four * beta2))
 
 
-      uvel2 = u(i, j, 3)** two !Calculate velocity squared term for v
+      uvel2 = u(i, j, 3)**two !Calculate velocity squared term for v
+      print*,"Uvel2:",uvel2
       lambda_y = (half)*(abs(u(i, j, 3))+SQRT(uvel2 + four * beta2))
   
       if (i >= 3 .and. i <= imax - 2) then
@@ -777,7 +782,7 @@ module subroutines
       if (j >= 3 .and. j <= jmax - 2) then
         d4pdy4 = (u(i, j + 2, 1) - four * u(i, j + 1, 1) + six * u(i, j, 1) - &
                  four * u(i, j - 1, 1) + u(i, j - 2, 1))/(dy ** 4)
-      else if (i == 2) then
+      else if (j == 2) then
         d4pdy4 = (u(i, j+2, 1) - four * u(i, j+1, 1) + six * u(i, j, 1) - &
                  four * u(i, j-1, 1) + (two * u(i, j-1, 1)-  u(i, j, 1))) / (dy ** 4)
       else
@@ -789,8 +794,13 @@ module subroutines
         
       end if
 
+     
+
       artviscx(i,j) = (-abs(lambda_x) * Cx * dx ** 3)/beta2 * d4pdx4
-      artviscy(i,j) = (-abs(lambda_y) * Cy * dx ** 3)/beta2 * d4pdx4
+    !if (int(artviscx(i,j)).ne.0) then
+    !  print*,"artviscx: ",artviscx(i,j) !used for debugging
+    !end if
+      artviscy(i,j) = (-abs(lambda_y) * Cy * dx ** 3)/beta2 * d4pdy4
 
 
 
@@ -819,6 +829,7 @@ module subroutines
   
   Integer ::              i                        ! i index (x direction)
   Integer ::              j                        ! j index (y direction)
+  Integer ::              k                        ! k index (k direction)
 
   Real(kind=Prec) ::      dpdx = -99.9_Prec        ! First derivative of pressure w.r.t. x
   Real(kind=Prec) ::      dudx = -99.9_Prec        ! First derivative of x velocity w.r.t. x
@@ -833,14 +844,12 @@ module subroutines
   Real(kind=Prec) ::      beta2 = -99.9_Prec       ! Beta squared parameter for time derivative preconditioning
   Real(kind=Prec) ::      uvel2 = -99.9_Prec       ! Velocity squared 
 
-
-
   ! Point Jacobi method
 
 !**************************************************************
 !************ADD CODING HERE FOR INTRO CFD STUDENTS************
 !**************************************************************
-  do while (1==1)
+  
 
     ! Loop over grid points
     do j = 2, jmax - 1
@@ -866,30 +875,24 @@ module subroutines
 
         d2udy2 = (uold(i, j-1, 2) - two * uold(i, j, 2) + uold(i, j+1, 2)) / (dy**2)
         d2vdy2 = (uold(i, j-1, 3) - two * uold(i, j, 3) + uold(i, j+1, 3)) / (dy**2)
-
-        if (((rho * dudx + rho * dvdy) - (artviscx(i,j) + artviscy(i,j)) - s(i,j,1)) < 0.001) then
-          exit
-        else 
           
           ! Update pressure (u-component)
-          u(i, j, 1) = uold(i, j, 1) - beta2 * dt * (rho * dudx + rho * dvdy - (artviscx(i,j) + artviscy(i,j)) - s(i,j,1))
+          u(i,j,1) = uold(i, j, 1) - beta2 * dt(i,j) * (rho * dudx + rho * dvdy - (artviscx(i,j) + artviscy(i,j)) - s(i,j,1))
          
+
           ! Update x-momentum (u-component)
-          u(i, j, 2) = uold(i, j, 2) - dt * rhoinv * (rho * u(i,j,2) * dudx + rho * u(i,j,3) * dudy + dpdx & 
+          u(i, j, 2) = uold(i, j, 2) - dt(i,j) * rhoinv * (rho * uold(i,j,2) * dudx + rho * uold(i,j,3) * dudy + dpdx & 
                                                       - artviscx(i,j) * d2udx2 - artviscx(i,j) * d2udy2 - s(i,j,2))
          
           ! Update y-momentum (v-component)
-          u(i, j, 3) = uold(i, j, 3) - dt * rhoinv * (rho * u(i,j,3) * dvdx + rho * u(i,j,3) * dvdy + dpdx & 
+          u(i, j, 3) = uold(i, j, 3) - dt(i,j) * rhoinv * (rho * uold(i,j,2) * dvdx + rho * uold(i,j,3) * dvdy + dpdy & 
                                                       - artviscy(i,j) * d2vdx2 - artviscy(i,j) * d2vdy2 - s(i,j,3))
-       end if
+          
         
 
       end do
     end do
-    uold = u
-
-  end do
-
+    
   end subroutine point_Jacobi
 
   !#######
@@ -1019,6 +1022,10 @@ module subroutines
   Integer ::              j                        ! j index (y direction)
   Integer ::              k                        ! k index (over # of equations)
   Integer ::              n                        ! Current iteration number
+  Real(kind=Prec) ::      sum_u2 = zero            ! sum of u to the 8th order
+  Real(kind=Prec) ::      sum_uold2 = zero         ! sum of uold to the 8th order
+  Real(kind=Prec) ::      norm_u2 = zero           ! Norm of u to the 8th order
+  Real(kind=Prec) ::      norm_uold2 = zero        ! Norm of u_old to the 8th order
 
   Real(kind=Prec) ::      conv                     ! Minimum of iterative residual norms from three equations
   
@@ -1027,6 +1034,22 @@ module subroutines
 !**************************************************************
 !************ADD CODING HERE FOR INTRO CFD STUDENTS************
 !**************************************************************
+  
+  do k = 1, neq
+    do j = 1, jmax
+      do i = 1, imax
+        sum_u2 = sum_u2+u(i,j,k)**2.0
+        !print*,"sum_u2:",sum_u2 !used for debugging
+        sum_uold2 = sum_uold2+uold(i,j,k)**2.0
+      end do
+    end do
+    norm_u2=(sum_u2/real(imax*jmax))**(1.0/2.0)
+    norm_uold2=(sum_uold2/real(imax*jmax))**(1.0/2.0)
+    res(k) = norm_u2/norm_uold2
+    !print*,"normu2:",norm_u2,"normuold2:",norm_uold2 !used for debugging
+    sum_u2 = zero
+    sum_uold2 = zero
+  end do
 
 
   conv = amax1(res(1),res(2),res(3)) ! Place current maximum scaled iterative residual into variable 'conv'
