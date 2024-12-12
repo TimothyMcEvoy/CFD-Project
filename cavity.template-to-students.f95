@@ -53,7 +53,7 @@ module set_inputs ! Sets the input variables for the code
   Integer, Parameter ::   neq = 3               ! Number of equation to be solved ( = 3: mass, x-mtm, y-mtm)
   Integer ::              nmax = 2000000         ! Maximum number of iterations
   Integer ::              iterout = 5000        ! Number of time steps between solution output
-  Integer ::              imms = 0              ! Manufactured solution flag: = 1 for manuf. sol., = 0 otherwise
+  Integer ::              imms = 1              ! Manufactured solution flag: = 1 for manuf. sol., = 0 otherwise
   Integer ::              isgs = 0              ! Symmetric Gauss-Seidel  flag: = 1 for SGS, = 0 for point Jacobi
   Integer ::              irstr = 0             ! Restart flag: = 1 for restart (file 'restart.in', = 0 for initial run
   Integer ::              ipgorder = 0          ! Order of pressure gradient: 0 = 2nd, 1 = 3rd (not needed)
@@ -1173,12 +1173,45 @@ module subroutines
   Real(kind=Prec) ::      x = -99.9_Prec           ! Temporary variable: x location
   Real(kind=Prec) ::      y = -99.9_Prec           ! Temporary variable: y location
   Real(kind=Prec) ::      DE = -99.9_Prec          ! Discretization error (absolute value)
+  Real(kind=Prec) ::      dx = -99.9_Prec          ! spatial step x
+  Real(kind=Prec) ::      dy = -99.9_Prec          ! spatial step y
+  Real(kind=Prec) ::      sum_u1 = -99.9_Prec      ! sum of elements for L1 norm
+  Real(kind=Prec) ::      sum_u2 = -99.9_Prec      ! sum of elements for L2 norm
+
 
   if(imms.eq.1) then ! Only compute discretization error norms for manufactured solution
 
 !**************************************************************
 !************ADD CODING HERE FOR INTRO CFD STUDENTS************
 !**************************************************************
+    dx = (xmax-xmin)/(imax-1)
+    dy = (ymax-ymin)/(jmax-1)
+    do k = 1, neq
+      rL1norm(k) = zero
+      rL2norm(k) = zero
+      rLinfnorm(k) = zero
+      
+      do j = 1, jmax
+        y = ymin + (j-1)*dy
+        do i = 1, imax
+          x = xmin + (i-1)*dx
+          DE = abs(u(i,j,k) - umms(x,y,k))
+          sum_u1 = sum_u1 + DE
+          sum_u2 = sum_u2 + DE**2
+          
+          rLinfnorm(k) = max(rLinfnorm(k), DE)
+
+        end do
+      end do
+      rL1norm(k) = (sum_u1/real(imax*jmax))
+      rL2norm(k) = (sum_u2/real(imax*jmax))**(1.0/2.0)
+
+      sum_u1 = zero
+      sum_u2 = zero
+      
+      
+    end do
+
 
 
   endif
