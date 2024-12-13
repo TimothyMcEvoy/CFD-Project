@@ -48,8 +48,8 @@ module set_inputs ! Sets the input variables for the code
   implicit none
   
   ! Set input values
-  Integer, Parameter ::   imax = 129             ! Number of points in the x-direction (use odd numbers only)
-  Integer, Parameter ::   jmax = 129            ! Number of points in the y-direction (use odd numbers only)
+  Integer, Parameter ::   imax = 9             ! Number of points in the x-direction (use odd numbers only)
+  Integer, Parameter ::   jmax = 9          ! Number of points in the y-direction (use odd numbers only)
   Integer, Parameter ::   neq = 3               ! Number of equation to be solved ( = 3: mass, x-mtm, y-mtm)
   Integer ::              nmax = 2000000         ! Maximum number of iterations
   Integer ::              iterout = 5000        ! Number of time steps between solution output
@@ -60,11 +60,11 @@ module set_inputs ! Sets the input variables for the code
   Integer ::              lim = 1               ! variable to be used as the limiter sensor (= 1 for pressure)
 
   Real(kind=Prec) ::      cfl  = 0.9_Prec       ! CFL number used to determine time step
-  Real(kind=Prec) ::      Cx = 0.01_Prec        ! Parameter for 4th order artificial viscosity in x
-  Real(kind=Prec) ::      Cy = 0.01_Prec        ! Parameter for 4th order artificial viscosity in y
+  Real(kind=Prec) ::      Cx = 0.001_Prec        ! Parameter for 4th order artificial viscosity in x
+  Real(kind=Prec) ::      Cy = 0.001_Prec        ! Parameter for 4th order artificial viscosity in y
   Real(kind=Prec) ::      toler = 1.e-8_Prec   ! Tolerance for iterative residual convergence
   Real(kind=Prec) ::      rkappa = 0.1_Prec     ! Time derivative preconditioning constant
-  Real(kind=Prec) ::      Re = 100.0_Prec       ! Reynolds number = rho*Uinf*L/rmu
+  Real(kind=Prec) ::      Re = 10.0_Prec       ! Reynolds number = rho*Uinf*L/rmu
   Real(kind=Prec) ::      pinf = 0.801333844662_Prec ! Initial pressure (N/m^2) -> from MMS value at cavity center
   Real(kind=Prec) ::      uinf = one            ! Lid velocity (m/s)
   Real(kind=Prec) ::      rho = one             ! Density (kg/m^3)
@@ -681,11 +681,11 @@ module subroutines
 
       beta2 = max(u(i, j, 2)**2 +u(i, j, 3)**2 , rkappa* vel2ref)!From Lecture set 6
       
-      uvel2 = u(i, j, 2)**two   !Calculate velocity squared term for u 
+      uvel2 = u(i, j, 2)**two + u(i, j, 3)**two   !Calculate velocity squared term for u 
       lambda_x = (half)*(abs(u(i, j, 2))+SQRT(uvel2 + four * beta2))
 
 
-      uvel2 = u(i, j, 3)** two !Calculate velocity squared term for v
+      !uvel2 = u(i, j, 3)** two !Calculate velocity squared term for v
       lambda_y = (half)*(abs(u(i, j, 3))+SQRT(uvel2 + four * beta2))
   
       lambda_max = max(lambda_x, lambda_y)
@@ -779,7 +779,7 @@ module subroutines
       lambda_x = (half)*(abs(u(i, j, 2))+SQRT(uvel2 + four * beta2))
       
 
-      uvel2 = u(i, j, 3)**two !Calculate velocity squared term for v
+      uvel2 = u(i, j, 3)**two+u(i, j, 2)**two !Calculate velocity squared term for v
       !print*,"Uvel2:",uvel2
       lambda_y = (half)*(abs(u(i, j, 3))+SQRT(uvel2 + four * beta2))
   
@@ -898,7 +898,7 @@ module subroutines
         d2udy2 = (uold(i, j-1, 2) - two * uold(i, j, 2) + uold(i, j+1, 2)) / (dy**2)
         d2vdy2 = (uold(i, j-1, 3) - two * uold(i, j, 3) + uold(i, j+1, 3)) / (dy**2)
           
-          ! Update pressure (u-component)
+          ! Update pressure (p-component)
           u(i,j,1) = uold(i, j, 1) - beta2 * dt(i,j) * (rho * dudx + rho * dvdy - (artviscx(i,j) + artviscy(i,j)) - s(i,j,1))
          
 

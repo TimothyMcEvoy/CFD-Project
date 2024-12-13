@@ -71,7 +71,7 @@ end
 
 % Extract variables from dataArray
 % Extract variables from dataArray
-J = 129;
+J = 9;
 x = dataArray{1};
 y = dataArray{2};
 p = dataArray{3};
@@ -196,26 +196,26 @@ DE_V = reshape(DE_v, I, J);
 % ylabel('y (m)');
 % colorbar;
 
-% Plot Exact Pressure
-figure;
-contourf(X, Y, P_exact);
-title('Exact Pressure');
-xlabel('x (m)');
-ylabel('y (m)');
-colorbar;
-
-% Plot Exact Velocity u
-figure;
-contourf(X, Y, U_exact);
-title('Exact Velocity u');
-xlabel('x (m)');
-ylabel('y (m)');
-colorbar;
-
-% Plot Exact Velocity v
-figure;
-contourf(X, Y, V_exact);
-title('Exact Velocity v');
-xlabel('x (m)');
-ylabel('y (m)');
-colorbar;
+% % Plot Exact Pressure
+% figure;
+% contourf(X, Y, P_exact);
+% title('Exact Pressure');
+% xlabel('x (m)');
+% ylabel('y (m)');
+% colorbar;
+% 
+% % Plot Exact Velocity u
+% figure;
+% contourf(X, Y, U_exact);
+% title('Exact Velocity u');
+% xlabel('x (m)');
+% ylabel('y (m)');
+% colorbar;
+% 
+% % Plot Exact Velocity v
+% figure;
+% contourf(X, Y, V_exact);
+% title('Exact Velocity v');
+% xlabel('x (m)');
+% ylabel('y (m)');
+% colorbar;

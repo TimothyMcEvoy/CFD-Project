@@ -205,19 +205,3 @@ hold off;
 
 
 
-% Streamline Plot
-figure;
-hold on;
-
-% Create the streamline plot
-streamslice(X, Y, U', V', 5); % Note the transpose of U and V and adjust density as needed.
-
-% Plot the cavity boundaries (optional, but often helpful)
-plot([X(1,:), X(:,end)', X(end,:), X(:,1)'], [Y(1,:), Y(:,end)', Y(end,:), Y(:,1)'], 'k-', 'LineWidth', 2);
-
-title('Velocity Field with Streamlines');
-xlabel('x (m)');
-ylabel('y (m)');
-axis equal;
-axis tight;
-hold off;
